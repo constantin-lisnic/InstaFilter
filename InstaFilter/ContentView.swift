@@ -14,6 +14,8 @@ import SwiftUI
 struct ContentView: View {
     @State private var processedImage: Image?
     @State private var filterIntensity = 0.5
+    @State private var radiusAmount = 100.0
+    @State private var scaleAmount = 50.0
     @State private var selectedItem: PhotosPickerItem?
 
     @State private var showingFilters = false
@@ -23,6 +25,10 @@ struct ContentView: View {
 
     @State private var currentFilter: CIFilter = CIFilter.sepiaTone()
     let context = CIContext()
+    
+    var isProcessedImageAvailable: Bool {
+        processedImage != nil
+    }
 
     var body: some View {
         NavigationStack {
@@ -47,11 +53,29 @@ struct ContentView: View {
                     Text("Intensity")
                     Slider(value: $filterIntensity)
                         .onChange(of: filterIntensity, applyProcessing)
+                        .disabled(!currentFilter.inputKeys.contains(kCIInputIntensityKey) || !isProcessedImageAvailable)
+                }
+                .padding(.vertical)
+                
+                HStack {
+                    Text("Radius")
+                    Slider(value: $radiusAmount, in: 0...200)
+                        .onChange(of: radiusAmount, applyProcessing)
+                        .disabled(!currentFilter.inputKeys.contains(kCIInputRadiusKey) || !isProcessedImageAvailable)
+                }
+                .padding(.vertical)
+                
+                HStack {
+                    Text("Scale")
+                    Slider(value: $scaleAmount, in: 0...100)
+                        .onChange(of: radiusAmount, applyProcessing)
+                        .disabled(!isProcessedImageAvailable || !currentFilter.inputKeys.contains(kCIInputScaleKey))
                 }
                 .padding(.vertical)
 
                 HStack {
                     Button("Change Filter", action: changeFilter)
+                        .disabled(!isProcessedImageAvailable)
                 }
 
                 Spacer()
@@ -107,11 +131,11 @@ struct ContentView: View {
         }
         if inputKeys.contains(kCIInputRadiusKey) {
             currentFilter.setValue(
-                filterIntensity * 200, forKey: kCIInputRadiusKey)
+                radiusAmount, forKey: kCIInputRadiusKey)
         }
         if inputKeys.contains(kCIInputScaleKey) {
             currentFilter.setValue(
-                filterIntensity * 10, forKey: kCIInputScaleKey)
+                scaleAmount, forKey: kCIInputScaleKey)
         }
 
         guard let outputImage = currentFilter.outputImage else { return }
@@ -130,8 +154,10 @@ struct ContentView: View {
 
         filterCount += 1
 
-        if filterCount >= 3 {
+        if filterCount >= 20 {
             requestReview()
+
+            filterCount = 0
         }
     }
 }
